@@ -135,7 +135,7 @@ elif args.cmd == 'combine':
         --output_dir %s""" % (A_path, B_path, train_path)
     os.system(cmd)
 elif args.cmd == 'push':
-    cmd = """rsync -rcP -e ssh --delete %s/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/""" % \
+    cmd = """rsync -rcP -e ssh --delete --exclude 'model*' %s/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/""" % \
           (os.path.join('projects', args.project), args.project)
     os.system(cmd)
 elif args.cmd == 'pull':
