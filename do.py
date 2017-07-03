@@ -1,6 +1,7 @@
 
 import os
 import argparse
+import shutil
 import numpy as np
 
 
@@ -26,6 +27,25 @@ parser = argparse.ArgumentParser()
 # parser_count = subparsers.add_parser('count')
 # parser_count.add_argument('count')
 # parser_count.set_defaults(func=count)
+
+
+
+parser.add_argument("project", choices=projects)
+parser.add_argument("cmd", choices=['train', 'test', 'pad', 'resize', 'genb', 'combine', 'prepraw', 'push', 'pull'])
+args = parser.parse_args()
+print args.project
+
+train_path = os.path.join('projects', args.project, 'train')
+model_path = os.path.join('projects', args.project, 'model')
+test_path = os.path.join('projects', args.project, 'test')
+val_path = os.path.join('projects', args.project, 'val')
+raw1_path = os.path.join('projects', args.project, 'pix', 'raw1')
+raw2_path = os.path.join('projects', args.project, 'pix', 'raw2')
+A1_path = os.path.join('projects', args.project, 'pix', 'A1')
+A2_path = os.path.join('projects', args.project, 'pix', 'A2')
+B1_path = os.path.join('projects', args.project, 'pix', 'B1')
+B2_path = os.path.join('projects', args.project, 'pix', 'B2')
+max_epochs = 200
 
 
 
@@ -63,22 +83,12 @@ def grabcut(imgo):
     return final
 
 
-
-parser.add_argument("--cmd", required=True, choices=['train', 'test', 'pad', 'resize', 'genb', 'combine', 'push', 'pull'])
-parser.add_argument("--project", required=True, choices=projects)
-args = parser.parse_args()
-print args.project
-
-train_path = os.path.join('projects', args.project, 'train')
-model_path = os.path.join('projects', args.project, 'model')
-test_path = os.path.join('projects', args.project, 'test')
-val_path = os.path.join('projects', args.project, 'val')
-raw_path = os.path.join('projects', args.project, 'pix', 'raw')
-A_path = os.path.join('projects', args.project, 'pix', 'A')
-B_path = os.path.join('projects', args.project, 'pix', 'B')
-max_epochs = 200
-
-if args.cmd == 'train':
+def train():
+    # clear output path
+    if os.path.exists(model_path):
+        shutil.rmtree(model_path)
+    os.mkdir(model_path)
+    # regenerate
     cmd = """python pix2pix.py \
       --mode train \
       --output_dir %s \
@@ -86,59 +96,127 @@ if args.cmd == 'train':
       --input_dir %s \
       --which_direction BtoA""" % (model_path, max_epochs, train_path)
     os.system(cmd)
-elif args.cmd == 'test':
+
+
+def test():
+    # clear output path
+    if os.path.exists(test_path):
+        shutil.rmtree(test_path)
+    os.mkdir(test_path)
+    # regenerate
     cmd = """python pix2pix.py \
       --mode test \
       --output_dir %s \
       --input_dir %s \
       --checkpoint %s""" % (test_path, val_path, model_path)
     os.system(cmd)
-elif args.cmd == 'pad':
+
+
+def pad(source, target):
+    # clear output path
+    if os.path.exists(target):
+        shutil.rmtree(target)
+    os.mkdir(target)
+    # regenerate
     from PIL import Image
-    for img_path in os.listdir(raw_path):
-        img = Image.open(os.path.join(raw_path, img_path))
+    for img_path in os.listdir(source):
+        img = Image.open(os.path.join(source, img_path))
         # return a white-background-color image having the img in exact center
         size = (max(img.size),)*2
         layer = Image.new('RGB', size, (255,255,255))
         layer.paste(img, tuple(map(lambda x:(x[0]-x[1])/2, zip(size, img.size))))
         # resize
         layer = layer.resize((256, 256), Image.ANTIALIAS)
-        if not os.path.exists(A_path):
-            os.makedir(A_path)
-            # os.makedirs(A_path)
-        layer.save(os.path.join(A_path, img_path))
-elif args.cmd == 'resize':
-    cmd = """python tools/process.py \
-        --input_dir %s \
-        --operation resize \
-        --output_dir %s""" % (raw_path, A_path)
-    os.system(cmd)
-elif args.cmd == 'genb':
+        if not os.path.exists(target):
+            os.makedir(target)
+            # os.makedirs(target)
+        layer.save(os.path.join(target, img_path))
+
+
+# def resize():
+#     # clear output path
+#     shutil.rmtree(A1_path)
+#     os.mkdir(A1_path)
+#     # regenerate
+#     cmd = """python tools/process.py \
+#         --input_dir %s \
+#         --operation resize \
+#         --output_dir %s""" % (raw1_path, A1_path)
+#     os.system(cmd)
+
+
+def genb(source, target):
+    # clear output path
+    if os.path.exists(target):
+        shutil.rmtree(target)
+    os.mkdir(target)
+    # regenerate
     import cv2
-    for img_path in os.listdir(A_path):
-        img = cv2.imread(os.path.join(A_path, img_path))
+    for img_path in os.listdir(source):
+        img = cv2.imread(os.path.join(source, img_path))
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         img = cv2.cvtColor(thresh,cv2.COLOR_GRAY2BGR)
         # img_cut = grabcut(img)
-        cv2.imwrite(os.path.join(B_path, img_path), img)
+        cv2.imwrite(os.path.join(target, img_path), img)
         # ret, thresh = cv2.threshold(gray,220,255,cv2.THRESH_BINARY)
         # ret, thresh = cv2.threshold(gray,0,255,cv2.ADAPTIVE_THRESH_MEAN_C+cv2.THRESH_OTSU)
         # ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
         # thresh = cv2.bitwise_not(thresh)  # invert
-        # cv2.imwrite(os.path.join(B_path, img_path), thresh)
-elif args.cmd == 'combine':
+        # cv2.imwrite(os.path.join(target, img_path), thresh)
+
+
+def combine(sourceA, sourceB, target):
+    # clear output path
+    if os.path.exists(target):
+        shutil.rmtree(target)
+    os.mkdir(target)
+    # regenerate
     cmd = """python tools/process.py \
         --input_dir %s \
         --b_dir %s \
         --operation combine \
-        --output_dir %s""" % (A_path, B_path, train_path)
+        --output_dir %s""" % (sourceA, sourceB, target)
     os.system(cmd)
-elif args.cmd == 'push':
-    cmd = """rsync -rcP -e ssh --delete --exclude 'model*' %s/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/""" % \
+
+
+def prepraw():
+    pad(raw1_path, A1_path)
+    pad(raw2_path, A2_path)
+    genb(A1_path, B1_path)
+    genb(A2_path, B2_path)
+    combine(A1_path, B1_path, train_path)
+    combine(A2_path, B2_path, val_path)
+
+
+def push():
+    cmd = """rsync -rcP -e ssh --delete --exclude 'model*' --exclude 'pix' --exclude 'val' --exclude 'test' %s/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/""" % \
           (os.path.join('projects', args.project), args.project)
     os.system(cmd)
-elif args.cmd == 'pull':
+
+
+def pull():
     cmd = """rsync -rcP -e ssh --delete stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/ %s/""" % \
           (args.project, os.path.join('projects', args.project))
     os.system(cmd)
+
+
+
+if args.cmd == 'train':
+    train()
+elif args.cmd == 'test':
+    test()
+elif args.cmd == 'pad':
+    pad(raw1_path, A1_path)
+elif args.cmd == 'resize':
+    resize()
+elif args.cmd == 'genb':
+    genb(A1_path, B1_path)
+elif args.cmd == 'combine':
+    combine()
+elif args.cmd == 'prepraw':
+    prepraw()
+elif args.cmd == 'push':
+    push()
+elif args.cmd == 'pull':
+    pull()
