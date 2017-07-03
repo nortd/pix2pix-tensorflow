@@ -190,13 +190,13 @@ def prepraw():
 
 
 def push():
-    cmd = """rsync -rcP -e ssh --delete --exclude 'model*' --exclude 'pix' --exclude 'val' --exclude 'test' %s/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/""" % \
+    cmd = """rsync -rcP -e ssh --delete %s/train/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/train/""" % \
           (os.path.join('projects', args.project), args.project)
     os.system(cmd)
 
 
 def pull():
-    cmd = """rsync -rcP -e ssh --delete stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/ %s/""" % \
+    cmd = """rsync -rcP -e ssh --delete stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/model/ %s/model/""" % \
           (args.project, os.path.join('projects', args.project))
     os.system(cmd)
 
