@@ -1,3 +1,4 @@
+#!/usr/bin/python
 
 import os
 import argparse
@@ -11,29 +12,9 @@ projects = [d for d in os.listdir('projects') if os.path.isdir(os.path.join('pro
 
 parser = argparse.ArgumentParser()
 
-#
-# subparsers = parser.add_subparsers(help="subparsers")
-#
-# # train subparser
-# parser_train = subparsers.add_parser('train')
-#
-# #use that as you would any other argument parser
-# parser_scream.add_argument('words', nargs='*')
-#
-# #set_defaults is nice to call a function which is specific to each subparser
-# parser_scream.set_defaults(func=scream)
-#
-# #repeat for our next sub-command
-# parser_count = subparsers.add_parser('count')
-# parser_count.add_argument('count')
-# parser_count.set_defaults(func=count)
-
-
-
 parser.add_argument("project", choices=projects)
 parser.add_argument("cmd", choices=['train', 'test', 'pad', 'resize', 'genb', 'combine', 'prepraw', 'push', 'pull'])
 args = parser.parse_args()
-print args.project
 
 train_path = os.path.join('projects', args.project, 'train')
 model_path = os.path.join('projects', args.project, 'model')
@@ -180,7 +161,20 @@ def combine(sourceA, sourceB, target):
     os.system(cmd)
 
 
+def fixextension(path):
+    for file_ in path:
+        file_path = os.path.join(path, file_)
+        base, ext_ = os.path.splitext(file_path)
+        if ext_.isupper():
+            os.rename(file_path, base+ext_.lower())
+    # os.system("rename 's/\.%s$/.%s/' %s" % (ext, extlow, os.path.join(path, "*."+ext)))
+
+
 def prepraw():
+    # fix names
+    fixextension(raw1_path)
+    fixextension(raw2_path)
+    # rest
     pad(raw1_path, A1_path)
     pad(raw2_path, A2_path)
     genb(A1_path, B1_path)
