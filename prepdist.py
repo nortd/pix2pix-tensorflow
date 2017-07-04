@@ -55,7 +55,7 @@ def flann(A_path, B_path, limit=0):
     FLANN_INDEX_LSH = 6
 
     i = 0
-    for img_ in os.listdir(A_path):
+    for img_ in sorted(os.listdir(A_path)):
         imgA_path = os.path.join(A_path, img_)
         print "Searching for {0}".format(img_)
         imgA = cv2.imread(imgA_path, 0)
@@ -67,21 +67,23 @@ def flann(A_path, B_path, limit=0):
                            multi_probe_level = 1) #2
         search_params = dict(checks=50)   # or pass empty dictionary
         flann = cv2.FlannBasedMatcher(index_params, search_params)
-        for img__ in os.listdir(A_path):
+        imgB_names = []
+        for img__ in sorted(os.listdir(B_path)):
+            imgB_names.append(img__)
             imgB_path = os.path.join(B_path, img__)
             imgB = cv2.imread(imgB_path, 0)
-            print "Detecting and computing {0}".format(img__)
+            # print "Detecting and computing {0}".format(img__)
             kpB, desB = brisk.detectAndCompute(imgB, None)
-            print "Adding..."
+            # print "Adding..."
             flann.add([desB])
 
 
         print len(flann.getTrainDescriptors()) #verify that it actually took the descriptors in
 
-        print "Training..."
+        # print "Training..."
         flann.train()
 
-        print "Matching..."
+        # print "Matching..."
         matchidxs = []
         matches = flann.knnMatch(desA, k=2)
         for match in matches:
@@ -89,6 +91,7 @@ def flann(A_path, B_path, limit=0):
                 matchidxs.append(matchpart.imgIdx)
         topimgidx = max(matchidxs, key=matchidxs.count)
         print topimgidx
+        print imgB_names[topimgidx]
 
         i += 1
         if limit > 0 and i > limit:
