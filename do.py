@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("project", choices=projects)
 parser.add_argument("cmd", choices=['train', 'test', 'pad', 'resize', 'genb', 'combine', 'prepraw', 'push', 'pull'])
+parser.add_argument("--epochs", dest="epochs", type=int, default=200)
 args = parser.parse_args()
 
 train_path = os.path.join('projects', args.project, 'train')
@@ -26,7 +27,6 @@ A1_path = os.path.join('projects', args.project, 'pix', 'A1')
 A2_path = os.path.join('projects', args.project, 'pix', 'A2')
 B1_path = os.path.join('projects', args.project, 'pix', 'B1')
 B2_path = os.path.join('projects', args.project, 'pix', 'B2')
-max_epochs = 200
 
 
 
@@ -75,7 +75,7 @@ def train():
       --output_dir %s \
       --max_epochs %s \
       --input_dir %s \
-      --which_direction BtoA""" % (model_path, max_epochs, train_path)
+      --which_direction BtoA""" % (model_path, args.epochs, train_path)
     os.system(cmd)
 
 
