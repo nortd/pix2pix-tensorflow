@@ -3,19 +3,24 @@
 import os
 import shutil
 from PIL import Image
+from PIL import ImageOps
 
 
-def crop_resize(source, target, w, h):
+def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
     # clear output path
     if os.path.exists(target):
         shutil.rmtree(target)
     os.mkdir(target)
     for img_path in os.listdir(source):
         img = Image.open(os.path.join(source, img_path))
-        image.thumbnail((w,h), Image.NEAREST)
+        img = ImageOps.fit(img, (w,h), method=Image.BICUBIC)
+        if w_up !=0 or h_up != 0:
+            w_up = w_up or w
+            h_up = h_up or h
+            img = img.resize((w_up, h_up), resample=Image.BICUBIC)
         if not os.path.exists(target):
             os.makedir(target)
-        image.save(os.path.join(target, img_path))
+        img.save(os.path.join(target, img_path))
 
 
 def train(model_path, train_path, epochs):
