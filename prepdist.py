@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument("project", choices=projects)
-parser.add_argument("cmd", choices=['prepraw'])
+parser.add_argument("cmd", choices=['prepraw', 'prepvals'])
 args = parser.parse_args()
 
 train_path = os.path.join('projects', args.project, 'train')
@@ -26,8 +26,10 @@ test_path = os.path.join('projects', args.project, 'test')
 val_path = os.path.join('projects', args.project, 'val')
 rawA_path = os.path.join('projects', args.project, 'pix', 'rawA')
 rawB_path = os.path.join('projects', args.project, 'pix', 'rawB')
+rawC_path = os.path.join('projects', args.project, 'pix', 'rawC')
 A_path = os.path.join('projects', args.project, 'pix', 'A')
 B_path = os.path.join('projects', args.project, 'pix', 'B')
+C_path = os.path.join('projects', args.project, 'pix', 'C')
 
 
 
@@ -150,3 +152,7 @@ if args.cmd == 'prepraw':
     pairs = flann(A_path, B_path, 0)
     # print pairs
     combine(pairs, A_path, B_path, train_path)
+elif args.cmd == 'prepvals':
+    pad(rawC_path, C_path)
+    pairs = flann(A_path, C_path, 0)
+    combine(pairs, A_path, C_path, val_path)
