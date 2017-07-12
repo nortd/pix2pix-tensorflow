@@ -15,7 +15,7 @@ path.init("enhance")
 # projects = [d for d in os.listdir('projects') if os.path.isdir(os.path.join('projects', d))]
 parser = argparse.ArgumentParser()
 # parser.add_argument("project", choices=projects)
-parser.add_argument("cmd", choices=['prep', 'tain', 'test', 'push', 'pull'])
+parser.add_argument("cmd", choices=['prep', 'train', 'test', 'push', 'pull'])
 parser.add_argument("--epochs", dest="epochs", type=int, default=200)
 args = parser.parse_args()
 
