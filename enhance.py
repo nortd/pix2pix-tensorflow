@@ -6,11 +6,6 @@
 
 import os
 import argparse
-import shutil
-import numpy as np
-import cv2
-import tensorflow as tf
-import tfimage as im
 
 import ops
 import path
