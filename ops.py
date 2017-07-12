@@ -2,11 +2,11 @@
 
 import os
 import shutil
-from PIL import Image
-from PIL import ImageOps
 
 
 def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
+    from PIL import Image
+    from PIL import ImageOps
     # clear output path
     if os.path.exists(target):
         shutil.rmtree(target)
