@@ -7,12 +7,15 @@ import shutil
 def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
     from PIL import Image
     from PIL import ImageOps
+    from PIL import ImageFilter
     # clear output path
     if os.path.exists(target):
         shutil.rmtree(target)
     os.mkdir(target)
-    for img_path in os.listdir(source):
+    for img_path in sorted(os.listdir(source)):
         img = Image.open(os.path.join(source, img_path))
+        if w_up !=0 or h_up != 0:
+            img = img.filter(ImageFilter.GaussianBlur(radius=6))
         img = ImageOps.fit(img, (w,h), method=Image.BICUBIC)
         if w_up !=0 or h_up != 0:
             w_up = w_up or w
@@ -23,7 +26,7 @@ def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
         img.save(os.path.join(target, img_path))
 
 
-def train(model_path, train_path, epochs):
+def train(model_path, train_path, epochs, size):
     """Train the convnet."""
     # clear output path
     if os.path.exists(model_path):
@@ -35,11 +38,12 @@ def train(model_path, train_path, epochs):
       --output_dir %s \
       --max_epochs %s \
       --input_dir %s \
-      --which_direction BtoA""" % (model_path, epochs, train_path)
+      --which_direction BtoA \
+      --size %s""" % (model_path, epochs, train_path, size)
     os.system(cmd)
 
 
-def test(model_path, val_path, test_path):
+def test(model_path, val_path, test_path, size):
     """Run the model."""
     # clear output path
     if os.path.exists(test_path):
@@ -50,11 +54,12 @@ def test(model_path, val_path, test_path):
       --mode test \
       --output_dir %s \
       --input_dir %s \
-      --checkpoint %s""" % (test_path, val_path, model_path)
+      --checkpoint %s \
+      --size %s""" % (test_path, val_path, model_path, size)
     os.system(cmd)
 
 
-def combine(sourceA, sourceB, target):
+def combine(sourceA, sourceB, target, size):
     """Combine images from two dirs. Match by name."""
     # clear output path
     if os.path.exists(target):
@@ -65,17 +70,29 @@ def combine(sourceA, sourceB, target):
         --input_dir %s \
         --b_dir %s \
         --operation combine \
-        --output_dir %s""" % (sourceA, sourceB, target)
+        --output_dir %s \
+        --size %s""" % (sourceA, sourceB, target, size)
     os.system(cmd)
 
 
-def fixextension(path):
-    """Lowers the extension."""
-    for file_ in path:
+def clean_filenames(path, rename=""):
+    """Rename and lowers the extension."""
+    i = 0
+    for file_ in sorted(os.listdir(path)):
         file_path = os.path.join(path, file_)
         base, ext_ = os.path.splitext(file_path)
+        head, tail = os.path.split(base)
         if ext_.isupper():
-            os.rename(file_path, base+ext_.lower())
+            print rename%(i)
+            if rename == "":
+                os.rename(file_path, base+ext_.lower())
+            else:
+                pass
+                os.rename(file_path, os.path.join(head,(rename%(i))+ext_.lower()))
+        else:
+            pass
+            os.rename(file_path, os.path.join(head,(rename%(i))+ext_.lower()))
+        i += 1
 
 
 def push(project_name):
