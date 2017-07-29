@@ -15,7 +15,7 @@ path.init("enhance")
 # projects = [d for d in os.listdir('projects') if os.path.isdir(os.path.join('projects', d))]
 parser = argparse.ArgumentParser()
 # parser.add_argument("project", choices=projects)
-parser.add_argument("cmd", choices=['extract', 'prep', 'prepvals', 'prepvals2', 'train', 'test', 'push', 'pull'])
+parser.add_argument("cmd", choices=['extract', 'videofy', 'prep', 'prepvals', 'prepvals2', 'train', 'test', 'push', 'pull'])
 parser.add_argument("--epochs", dest="epochs", type=int, default=200)
 parser.add_argument("--size", dest="size", type=int, default=256)
 parser.add_argument("--intime", default="")
@@ -40,6 +40,13 @@ if args.cmd == 'extract':
     # cmd = """ffmpeg -i ../video.mp4  -r 1/2  -f image2  -q:v 2 image%05d.jpg"""
     os.system(cmd)
     os.chdir(cwd)
+elif args.cmd == 'videofy':
+    cwd = os.getcwd()
+    os.chdir(os.path.join(path.test, 'images'))
+    # cmd = "ffmpeg -r 30 -f image2 -s 256x256 -i pic_%d-outputs.png -vcodec libx264 -crf 25  -pix_fmt yuv420p ../out.mp4"
+    cmd = 'ffmpeg -r 30 -i pic_%d-outputs.png -c:v libx264 -crf 15 -vf "fps=30,format=yuv420p" ../../out.mp4'
+    os.system(cmd)
+    os.chdir(cwd)
 elif args.cmd == 'prep':
     ops.clean_filenames(path.rawA, rename='pic_%s')
     ops.crop_square_resize(path.rawA, path.A, args.size, args.size)
@@ -47,7 +54,8 @@ elif args.cmd == 'prep':
     ops.combine(path.A, path.B, path.train, args.size)
 elif args.cmd == 'prepvals':
     ops.clean_filenames(path.rawC, rename='pic_%s')
-    ops.crop_square_resize(path.rawC, path.C, args.size/8, args.size/8, args.size, args.size)
+    # ops.crop_square_resize(path.rawC, path.C, args.size/8, args.size/8, args.size, args.size)
+    ops.crop_square_resize(path.rawC, path.C, args.size/16, args.size/16, args.size, args.size)
     ops.combine(path.C, path.C, path.val, args.size)
 elif args.cmd == 'prepvals2':
     ops.clean_filenames(path.rawC, rename='pic_%s')
