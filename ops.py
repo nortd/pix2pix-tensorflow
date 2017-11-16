@@ -3,6 +3,8 @@
 import os
 import shutil
 
+import vm
+
 
 def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
     from PIL import Image
@@ -96,12 +98,14 @@ def clean_filenames(path, rename=""):
 
 
 def push(project_name):
-    cmd = """rsync -rcP -e ssh --delete %s/train/ stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/train/""" % \
-          (os.path.join('projects', project_name), project_name)
+    """Push training set to GPU_INSTANCE."""
+    cmd = """rsync -rcP -e ssh --delete %s/train/ %s:/home/stefan/git/pix2pix-tensorflow/projects/%s/train/""" % \
+          (os.path.join('projects', project_name), vm.GPU_INSTANCE, project_name)
     os.system(cmd)
 
 
 def pull(project_name):
-    cmd = """rsync -rcP -e ssh --delete stefan@teslahawk:/home/stefan/git/pix2pix-tensorflow/projects/%s/model/ %s/model/""" % \
-          (project_name, os.path.join('projects', project_name))
+    """Pull trained model from GPU_INSTANCE."""
+    cmd = """rsync -rcP -e ssh --delete %s:/home/stefan/git/pix2pix-tensorflow/projects/%s/model/ %s/model/""" % \
+          (vm.GPU_INSTANCE, project_name, os.path.join('projects', project_name))
     os.system(cmd)

@@ -1,3 +1,22 @@
+"""Manage the directories of a roject.
+
+Directories are as follows:
+    projects/                 ... home of all the project data
+    projects/<name>           ... a project
+    ---
+    project/<name>/train      ... training images
+    projects/<name>/model     ... the trained model
+    project/<name>/val        ... input pair images
+    project/<name>/test       ... output images
+    ---
+    projects/<name>/pix       ... image staging
+    projects/<name>/pix/A     ... target
+    projects/<name>/pix/rawA  ... target, raw
+    projects/<name>/pix/B     ... source
+    projects/<name>/pix/rawB  ... source, raw
+    projects/<name>/pix/C     ... input
+    projects/<name>/pix/rawC  ... imput raw
+"""
 
 import os
 import shutil

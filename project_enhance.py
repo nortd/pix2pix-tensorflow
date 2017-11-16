@@ -9,34 +9,44 @@ import argparse
 
 import ops
 import path
-path.init("enhance")
+
+PROJECT = "enhance2"
+TRAINGVIDEO = "../../../a-space-odyssey.mp4"
+TRAINGVIDEO_INTIME = "00:10:00"
+TRAINGVIDEO_OUTTIME = "00:20:00"
+# TRAINGVIDEO_INTIME = "1:38:49"
+# TRAINGVIDEO_OUTTIME = "1:48:49"
+TRAINGVIDEO_FRAMES = "1/10"  # 1/10 means about 1 image per minute
+TRAINGVIDEO_SIZE = "256:-2"
+TRAINGVIDEO_CROP = "256:256"
+
+
+path.init(PROJECT)
 
 
 # projects = [d for d in os.listdir('projects') if os.path.isdir(os.path.join('projects', d))]
 parser = argparse.ArgumentParser()
 # parser.add_argument("project", choices=projects)
-parser.add_argument("cmd", choices=['extract', 'videofy', 'prep', 'prepvals', 'prepvals2', 'train', 'test', 'push', 'pull'])
+parser.add_argument("cmd", choices=['extract', 'videofy', 'prep', 'prepvals', 'prepvals2', 'train', 'train_remote', 'test', 'push', 'pull'])
 parser.add_argument("--epochs", dest="epochs", type=int, default=200)
 parser.add_argument("--size", dest="size", type=int, default=256)
-parser.add_argument("--intime", default="")
-parser.add_argument("--outtime", default="")
-parser.add_argument("--extractsize", default="")
-parser.add_argument("--imageevery", default="1/2")
 args = parser.parse_args()
 
 if args.cmd == 'extract':
     cwd = os.getcwd()
     os.chdir(path.rawA)
-    intime = outtime = extractsize = ""
-    imageevery = "-r %s" % (args.imageevery)
+    intime = outtime = scale = crop = ""
+    imageevery = "-r %s" % (TRAINGVIDEO_FRAMES)
     filepattern = "image%05d.jpg"
-    if args.extractsize != "":
-        extractsize = "-s %s" % (args.extractsize)  # eg. hd720
-    if args.intime != "":
-        intime = "-ss %s" % (args.intime)
-    if args.outtime != "":
-        outtime = "-ss %s" % (args.intime)
-    cmd = "ffmpeg %s -i ../video.mp4 %s %s -f image2  -q:v 2 %s %s" % (intime, extractsize, imageevery, outtime, filepattern)
+    if TRAINGVIDEO_SIZE != "":
+        scale = "-vf scale=%s" % (TRAINGVIDEO_SIZE)
+    if TRAINGVIDEO_CROP != "":
+        crop = "-filter:v \"crop=%s\"" % (TRAINGVIDEO_CROP)
+    if TRAINGVIDEO_INTIME != "":
+        intime = "-ss %s" % (TRAINGVIDEO_INTIME)
+    if TRAINGVIDEO_OUTTIME != "":
+        outtime = "-ss %s" % (TRAINGVIDEO_OUTTIME)
+    cmd = "ffmpeg %s -i %s %s %s %s -f image2  -q:v 2 %s %s" % (intime, TRAINGVIDEO, scale, crop, imageevery, outtime, filepattern)
     # cmd = """ffmpeg -i ../video.mp4  -r 1/2  -f image2  -q:v 2 image%05d.jpg"""
     os.system(cmd)
     os.chdir(cwd)
@@ -63,9 +73,12 @@ elif args.cmd == 'prepvals2':
     ops.combine(path.C, path.C, path.val, args.size)
 elif args.cmd == 'train':
     ops.train(path.model, path.train, args.epochs, args.size)
+elif args.cmd == 'train_remote':
+    # ssh, tmux, train
+    os.system('ssh %s' % (vm.GPU_INSTANCE))
 elif args.cmd == 'test':
     ops.test(path.model, path.val, path.test, args.size)
 elif args.cmd == 'push':
-    ops.push('enhance')
+    ops.push(PROJECT)
 elif args.cmd == 'pull':
-    ops.pull('enhance')
+    ops.pull(PROJECT)
