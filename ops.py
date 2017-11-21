@@ -2,11 +2,12 @@
 
 import os
 import shutil
+import glob
 
 import vm
 
 
-def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
+def crop_square_resize(source, target, w=0, h=0, w_up=0, h_up=0):
     from PIL import Image
     from PIL import ImageOps
     from PIL import ImageFilter
@@ -17,14 +18,31 @@ def crop_square_resize(source, target, w, h, w_up=0, h_up=0):
     for img_path in sorted(os.listdir(source)):
         img = Image.open(os.path.join(source, img_path))
         if w_up !=0 or h_up != 0:
-            img = img.filter(ImageFilter.GaussianBlur(radius=6))
-        img = ImageOps.fit(img, (w,h), method=Image.BICUBIC)
+            img = img.filter(ImageFilter.GaussianBlur(radius=10))
+        if w !=0 and h != 0:
+            img = ImageOps.fit(img, (w,h), method=Image.BICUBIC)
         if w_up !=0 or h_up != 0:
             w_up = w_up or w
             h_up = h_up or h
             img = img.resize((w_up, h_up), resample=Image.BICUBIC)
         if not os.path.exists(target):
             os.makedir(target)
+        img.save(os.path.join(target, img_path))
+
+
+def blur_resize(source, target, w_up, h_up, blur=0):
+    from PIL import Image
+    from PIL import ImageOps
+    from PIL import ImageFilter
+    # clear output path
+    if os.path.exists(target):
+        shutil.rmtree(target)
+    os.mkdir(target)
+    for img_path in sorted(os.listdir(source)):
+        img = Image.open(os.path.join(source, img_path))
+        if blur > 0:
+            img = img.filter(ImageFilter.GaussianBlur(radius=blur))
+        img = img.resize((w_up, h_up), resample=Image.BICUBIC)
         img.save(os.path.join(target, img_path))
 
 
@@ -109,3 +127,14 @@ def pull(project_name):
     cmd = """rsync -rcP -e ssh --delete %s:/home/stefan/git/pix2pix-tensorflow/projects/%s/model/ %s/model/""" % \
           (vm.GPU_INSTANCE, project_name, os.path.join('projects', project_name))
     os.system(cmd)
+
+
+def output_as_input(path_src, path_dst):
+    # clear output path
+    if os.path.exists(path_dst):
+        shutil.rmtree(path_dst)
+    os.mkdir(path_dst)
+    files = glob.glob(os.path.join(os.path.join(path_src, 'images'), "*outputs.*"))
+    for f in files:
+        if os.path.isfile(f):
+            shutil.copy(f, path_dst)

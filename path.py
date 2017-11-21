@@ -21,10 +21,12 @@ Directories are as follows:
 import os
 import shutil
 
-project = pix = train = model = test = val = rawA = rawB = rawC = A = B = C = ""
+project = pix = train = model = test = val = ""
+rawA = rawB = rawC = A = B = C = tempA = tempB = tempC = ""
 
 def init(project_name):
-    global project, pix, train, model, test, val, rawA, rawB, rawC, A, B, C
+    global project, pix, train, model, test, val
+    global rawA, rawB, rawC, A, B, C, tempA, tempB, tempC
     project = os.path.join('projects', project_name)
     pix = os.path.join(project, 'pix')
     train = os.path.join(project, 'train')
@@ -37,6 +39,9 @@ def init(project_name):
     A = os.path.join(project, 'pix', 'A')
     B = os.path.join(project, 'pix', 'B')
     C = os.path.join(project, 'pix', 'C')
+    tempA = os.path.join(project, 'pix', 'tempA')
+    tempB = os.path.join(project, 'pix', 'tempB')
+    tempC = os.path.join(project, 'pix', 'tempC')
 
     # create
     if not os.path.exists(project):
@@ -63,3 +68,9 @@ def init(project_name):
         os.mkdir(B)
     if not os.path.exists(C):
         os.mkdir(C)
+    if not os.path.exists(tempA):
+        os.mkdir(tempA)
+    if not os.path.exists(tempB):
+        os.mkdir(tempB)
+    if not os.path.exists(tempC):
+        os.mkdir(tempC)

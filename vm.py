@@ -30,7 +30,7 @@ relay_params = (RELAY_INSTANCE, RELAY_PROJECT, RELAY_ZONE)
 gpu_params = (GPU_INSTANCE, GPU_PROJECT, GPU_ZONE)
 
 
-def start():
+def start(relay=True, gpu=True):
     """Start both vm instances and write the IP addresses to .ssh/config on
     this computer and RELAY computer. Then you can use the oProxyJump ssh
     argument to access the GPU VM:
@@ -45,22 +45,25 @@ def start():
         IdentityFile ~/.ssh/google-gce-ssh-key
         ProxyCommand ssh teslafink nc %h %p
     """
-    cmd = "gcloud compute instances start %s --project %s --zone %s" % relay_params
-    os.system(cmd)
-    cmd = "gcloud compute instances start %s --project %s --zone %s" % gpu_params
-    os.system(cmd)
-    # set SSH config file on LAPTOP and RELAY with IP from GPU_INSTANCE
-    gpu_ip = get_gpu_ip()
-    relay_ip = get_relay_ip()
-    replace_ip_in_ssh_config('~/.ssh/config', RELAY_INSTANCE, relay_ip)
-    replace_ip_in_ssh_config('~/.ssh/config', GPU_INSTANCE, gpu_ip)
-    update_remote_ssh_ip(RELAY_INSTANCE, GPU_INSTANCE, gpu_ip)
+    if relay:
+        cmd = "gcloud compute instances start %s --project %s --zone %s" % relay_params
+        os.system(cmd)
+        relay_ip = get_relay_ip()
+        replace_ip_in_ssh_config('~/.ssh/config', RELAY_INSTANCE, relay_ip)
+    if gpu:
+        cmd = "gcloud compute instances start %s --project %s --zone %s" % gpu_params
+        os.system(cmd)
+        gpu_ip = get_gpu_ip()
+        replace_ip_in_ssh_config('~/.ssh/config', GPU_INSTANCE, gpu_ip)
+        update_remote_ssh_ip(RELAY_INSTANCE, GPU_INSTANCE, gpu_ip)
 
-def stop():
-    cmd = "gcloud compute instances stop %s --project %s --zone %s" % relay_params
-    os.system(cmd)
-    cmd = "gcloud compute instances stop %s --project %s --zone %s" % gpu_params
-    os.system(cmd)
+def stop(relay=True, gpu=True):
+    if relay:
+        cmd = "gcloud compute instances stop %s --project %s --zone %s" % relay_params
+        os.system(cmd)
+    if gpu:
+        cmd = "gcloud compute instances stop %s --project %s --zone %s" % gpu_params
+        os.system(cmd)
 
 
 
@@ -117,12 +120,20 @@ def replace_ip_in_ssh_config(file_path, host, new_ip):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("cmd", choices=['start', 'stop'])
+    parser.add_argument("--relay", action='store_true')
+    parser.add_argument("--gpu", action='store_true')
     args = parser.parse_args()
 
     if args.cmd == 'start':
-        start()
+        if not args.relay and not args.gpu:
+            start(True, True)
+        else:
+            start(args.relay, args.gpu)
     elif args.cmd == 'stop':
-        stop()
+        if not args.relay and not args.gpu:
+            stop(True, True)
+        else:
+            stop(args.relay, args.gpu)
 
     # list status
     os.system("gcloud compute instances list --project %s" % (RELAY_PROJECT))
