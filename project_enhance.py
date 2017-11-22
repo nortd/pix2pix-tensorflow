@@ -1,7 +1,8 @@
-"""Train a convnet to enhance low resolution images.
+"""Train NN to enhance low resolution images.
 
-1. Start with a set of training images.
-2. Create a second set by downscaling it.
+1. 'extract' images from video.
+2. 'prep' training set
+3.
 """
 
 import os
@@ -9,20 +10,13 @@ import argparse
 
 import ops
 import path
+import vm
 
 # PROJECT = "enhance2"
 PROJECT = "enhance_terminatorsunsets"
 TRAINGVIDEO = "../../../terminator.mp4"
-TRAINGVIDEO_INTIME = ""
-# TRAINGVIDEO_INTIME = "00:04:00"
-TRAINGVIDEO_OUTTIME = ""
-# TRAINGVIDEO_OUTTIME = "01:40:00"
-# TRAINGVIDEO_OUTTIME = "00:04:20"
-# TRAINGVIDEO_FRAMES = "1/10"  # 1 means about 1 image per minute
-TRAINGVIDEO_FRAMES = "1/4"
-TRAINGVIDEO_SIZE = "-2:256"
-# TRAINGVIDEO_CROP = "256:256"
-TRAINGVIDEO_CROP = ""
+TRAINGVIDEO_FPS = "1/4"
+
 
 path.init(PROJECT)
 
@@ -51,29 +45,13 @@ def escalate(init_size=32, sizes=[256, 512, 1024, 2048]):
 # projects = [d for d in os.listdir('projects') if os.path.isdir(os.path.join('projects', d))]
 parser = argparse.ArgumentParser()
 # parser.add_argument("project", choices=projects)
-parser.add_argument("cmd", choices=['extract', 'videofy', 'prep', 'prepvals', 'prepvals2', 'escalate', 'train', 'train_remote', 'test', 'push', 'pull'])
+parser.add_argument("cmd", choices=['extract', 'videofy', 'prep', 'escalate', 'train', 'train_remote', 'test', 'push', 'pull', 'pull_from_relay'])
 parser.add_argument("--epochs", dest="epochs", type=int, default=200)
 parser.add_argument("--size", dest="size", type=int, default=256)
 args = parser.parse_args()
 
 if args.cmd == 'extract':
-    cwd = os.getcwd()
-    os.chdir(path.rawA)
-    intime = outtime = scale = crop = ""
-    imageevery = "-r %s" % (TRAINGVIDEO_FRAMES)
-    filepattern = "image%05d.jpg"
-    if TRAINGVIDEO_SIZE != "":
-        scale = "-vf scale=%s" % (TRAINGVIDEO_SIZE)
-    if TRAINGVIDEO_CROP != "":
-        crop = "-filter:v \"crop=%s\"" % (TRAINGVIDEO_CROP)
-    if TRAINGVIDEO_INTIME != "":
-        intime = "-ss %s" % (TRAINGVIDEO_INTIME)
-    if TRAINGVIDEO_OUTTIME != "":
-        outtime = "-ss %s" % (TRAINGVIDEO_OUTTIME)
-    cmd = "ffmpeg %s -i %s %s %s %s -f image2  -q:v 2 %s %s" % (intime, TRAINGVIDEO, scale, crop, imageevery, outtime, filepattern)
-    # cmd = """ffmpeg -i ../video.mp4  -r 1/2  -f image2  -q:v 2 image%05d.jpg"""
-    os.system(cmd)
-    os.chdir(cwd)
+   ops.video_extract(TRAINGVIDEO, path.rawA, TRAINGVIDEO_FPS)
 elif args.cmd == 'videofy':
     cwd = os.getcwd()
     os.chdir(os.path.join(path.test, 'images'))
@@ -86,24 +64,17 @@ elif args.cmd == 'prep':
     ops.crop_square_resize(path.rawA, path.A, args.size, args.size)
     ops.crop_square_resize(path.A, path.B, args.size/8, args.size/8, args.size, args.size)
     ops.combine(path.A, path.B, path.train, args.size)
-elif args.cmd == 'prepvals':
-    ops.clean_filenames(path.rawC, rename='pic_%s')
-    # ops.crop_square_resize(path.rawC, path.C, args.size/8, args.size/8, args.size, args.size)
-    ops.crop_square_resize(path.rawC, path.C, args.size/16, args.size/16, args.size, args.size)
-    ops.combine(path.C, path.C, path.val, args.size)
-elif args.cmd == 'prepvals2':
-    ops.clean_filenames(path.rawC, rename='pic_%s')
-    ops.crop_square_resize(path.rawC, path.C, args.size, args.size)
-    ops.combine(path.C, path.C, path.val, args.size)
 elif args.cmd == 'escalate':
     escalate()
-    # """Use output images as input."""
-    # output = os.path.join(path.test, 'images')
-    # ops.copy_files(output, path.tempC, "*outputs.*")
-    # ops.crop_square_resize(path.tempC, path.C, args.size/2, args.size/2, args.size, args.size)
-    # ops.combine(path.C, path.C, path.val, args.size)
 elif args.cmd == 'train':
     ops.train(path.model, path.train, args.epochs, args.size)
+elif args.cmd == 'init_remote':
+    # create dirs and git clone repo
+    os.system('ssh %s "mkdir git; cd git; git clone %s; mkdir %s/projects"'
+              % (vm.GPU_INSTANCE, path.GIT_REPO_URL, path.GIT_REPO_NAME))
+    # install packages
+    os.system('ssh %s "sudo apt-get install -y ffmpeg python-imaging python3-pil"'
+              % (vm.GPU_INSTANCE))
 elif args.cmd == 'train_remote':
     """Run on GPU_INSTANCE via ssh and tmux.
     To keep a process running I use:
@@ -111,20 +82,18 @@ elif args.cmd == 'train_remote':
     Manually running tmux first works too. Detaching is done with [ctrl]-[b], [d].
     And a running tmux session can be reatached with: tmux attach
     """
-    cmd = 'ssh %s "tmux -d python git/pix2pix-tensorflow/project_enhance.py train"' % \
-          (vm.GPU_INSTANCE)
-    os.system(cmd)
+    os.system('ssh %s "cd git; git pull"'
+              % (vm.GPU_INSTANCE))
+    os.system('ssh %s "python git/pix2pix-tensorflow/project_enhance.py extract"'
+              % (vm.GPU_INSTANCE))
+    os.system('ssh %s "python git/pix2pix-tensorflow/project_enhance.py prep"'
+              % (vm.GPU_INSTANCE))
+    vm.call_remote_cmd_in_tmux(vm.GPU_INSTANCE, "python git/pix2pix-tensorflow/project_enhance.py train")
 elif args.cmd == 'test':
     ops.test(path.model, path.val, path.test, args.size)
 elif args.cmd == 'push':
     ops.push(PROJECT)
 elif args.cmd == 'pull':
     ops.pull(PROJECT)
-
-
-# To init gpu instance:
-#   mkdir git
-#   git clone
-#   mkdir projects
-#   sudo apt-get install ffmpeg, python-imaging, python3-pil
-#
+elif args.cmd == 'pull_from_relay':
+    ops.pull_from_relay(PROJECT)

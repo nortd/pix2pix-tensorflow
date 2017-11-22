@@ -21,6 +21,9 @@ Directories are as follows:
 import os
 import shutil
 
+GIT_REPO_URL = "https://github.com/nortd/pix2pix-tensorflow.git"
+GIT_REPO_NAME = "pix2pix-tensorflow"
+
 project = pix = train = model = test = val = ""
 rawA = rawB = rawC = A = B = C = tempA = tempB = tempC = ""
 

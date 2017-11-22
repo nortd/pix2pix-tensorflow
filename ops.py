@@ -128,6 +128,34 @@ def pull(project_name):
           (vm.GPU_INSTANCE, project_name, os.path.join('projects', project_name))
     os.system(cmd)
 
+def pull_from_relay(project_name):
+    """Pull trained model from GPU_INSTANCE."""
+    cmd = """rsync -rcP -e ssh --delete %s:/home/stefan/git/pix2pix-tensorflow/projects/%s/model/ %s/model/""" % \
+          (vm.RELAY_INSTANCE, project_name, os.path.join('projects', project_name))
+    os.system(cmd)
+
+
+###############################################################################
+
+
+
+def video_extract(video_path, out_path, fps, scale="-2:256", intime="", outtime="", pattern="image%05d.jpg"):
+    cwd = os.getcwd()
+    os.chdir(out_path)
+    intime = outtime = scale = ""
+    fps = "-r %s" % (fps)
+    filepattern = pattern
+    if scale != "":
+        scale = "-vf scale=%s" % (scale)
+    if intime != "":
+        intime = "-ss %s" % (intime)
+    if outtime != "":
+        outtime = "-ss %s" % (outtime)
+    cmd = "ffmpeg %s -i %s %s %s -f image2  -q:v 2 %s %s" % (intime, video_path, scale, fps, outtime, filepattern)
+    # cmd = """ffmpeg -i ../video.mp4  -r 1/2  -f image2  -q:v 2 image%05d.jpg"""
+    os.system(cmd)
+    os.chdir(cwd)
+
 
 def output_as_input(path_src, path_dst):
     # clear output path
